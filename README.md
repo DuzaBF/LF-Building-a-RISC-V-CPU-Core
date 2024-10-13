@@ -22,6 +22,23 @@ At this time, there are no course corrections or platform issues to report. Plea
 
 To begin the first RISC-V lab, when instructed to do so, Ctrl-click this link to <a href="https://makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2FLF-Building-a-RISC-V-CPU-Core%2Fmaster%2Frisc-v_shell.tlv" target="_blank" atom_fix="_">open starting-point code in makerchip</a>.
 
+## Running Makerchip locally
+
+Create Python virtual environment and activate it:
+```
+python3 -m venv venv
+source ./venv/bin/activate
+```
+Install Makerchip:
+```
+pip install makerchip-app
+```
+Run the app:
+```
+makerchip risc-v_shell.tlv
+```
+
+
 ## RISC-V Reference Solution
 
 In case you get stuck, we've got your back! These <a href="https://makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2FLF-Building-a-RISC-V-CPU-Core%2Fmain%2Frisc-v_solutions.tlv" target="_blank" atom_fix="_">reference solutions</a> (Ctrl-click) will help with syntax, etc. without handing you the answers.
