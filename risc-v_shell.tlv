@@ -29,6 +29,7 @@
    // Test result value in x14, and set x31 to reflect pass/fail.
    m4_asm(ADDI, x30, x14, 111111010100) // Subtract expected value of 44 to set x30 to 1 if and only iff the result is 45 (1 + 2 + ... + 9).
    m4_asm(BGE, x0, x0, 0) // Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
+   m4_asm(ADDI, x0, x0, 11011100)
    m4_asm_end()
    m4_define(['M4_MAX_CYC'], 50)
    //---------------------------------------------------------------------------------
@@ -44,10 +45,11 @@
    
    
    $next_pc[31:0] = $reset ? 0 :
-      $pc[31:0] + 1;
+      $taken_br ? $br_tgt_pc[31:0] :
+      $pc[31:0] + 32'h4;
    $pc[31:0] = >>1$next_pc[31:0];
    
-   `READONLY_MEM($pc[31:0], $$instr[31:0]);
+   `READONLY_MEM($pc, $$instr[31:0]);
    
    $is_u_instr = $instr[6:2] ==? 5'b0x101;
    $is_i_instr = $instr[6:2] == 5'b11001 || ($instr[6:2] ==? 5'b00xxx && $instr[6:2] != 5'b00101);
@@ -86,21 +88,28 @@
 
    $is_add = $dec_bits ==? 11'b0_000_0110011;
    $is_addi = $dec_bits ==? 11'bx_000_0010011;
+   
+   $taken_br = $is_beq ? $src1_value == $src2_value :
+              $is_bne ?  $src1_value != $src2_value :
+              $is_blt ? ($src1_value <  $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
+              $is_bge ? ($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31]) :
+              $is_bltu ?($src1_value <  $src2_value) :
+              $is_bgeu ?($src1_value >  $src2_value) :
+              1'b0;
 
-   `BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid $imm_valid $funct3 $funct7 $opcode $imm[31:0]
-              $is_beq
-              $is_bne
-              $is_blt
-              $is_bge
-              $is_bltu
-              $is_bgeu
-              $is_add
-              $is_addi)
+   $br_tgt_pc[31:0] = $pc[31:0] + $imm;
+   `BOGUS_USE($imm_valid $funct3 $funct7 $opcode)
+              
+   
+   $result[31:0] =
+    $is_addi ? $src1_value + $imm :
+    $is_add ? $src1_value + $src2_value :
+               32'b0;
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = 1'b0;
+   m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
-   //m4+rf(32, 32, $reset, $wr_en, $wr_index[4:0], $wr_data[31:0], $rd_en1, $rd_index1[4:0], $rd_data1, $rd_en2, $rd_index2[4:0], $rd_data2)
+   m4+rf(32, 32, $reset, $rd[4:0] == 5'b0 ? 1'b0 : $rd_valid, $rd[4:0], $result[31:0], $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
    //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
    m4+cpu_viz()
 \SV
